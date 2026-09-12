@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRISPÉ — The Art of the Crunch.</title>
+<meta name="description" content="CRISPÉ premium potato chips. From a humble potato — carefully sliced, golden-cooked and finished with bold flavour. The art of the crunch.">
+<style>
+  :root {
+    --bg: #050505;
+    --gold: #c9a35a;
+    --gold-bright: #e8c477;
+    --text: #f3efe6;
+    --text-dim: rgba(243, 239, 230, 0.55);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: auto; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ── loader ── */
+  #loader {
+    position: fixed; inset: 0; z-index: 100;
+    background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 26px;
+    transition: opacity 0.8s ease;
+  }
+  #loader.done { opacity: 0; pointer-events: none; }
+  #loader .mark {
+    font-size: 26px; letter-spacing: 0.42em; text-indent: 0.42em;
+    color: var(--gold-bright); text-transform: uppercase; font-weight: 600;
+  }
+  #loader .bar {
+    width: 180px; height: 1px; background: rgba(201, 163, 90, 0.2);
+    overflow: hidden; position: relative;
+  }
+  #loader .bar i {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 0%;
+    background: var(--gold); display: block;
+    transition: width 0.2s ease;
+  }
+  #loader .credit {
+    position: absolute; bottom: 28px;
+    font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(243,239,230,0.28);
+  }
+
+  /* ── scroll stage ── */
+  #track { height: 700vh; position: relative; }
+  #stage {
+    position: sticky; top: 0; height: 100vh; width: 100%;
+    overflow: hidden;
+  }
+  #film {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    display: block;
+  }
+  #vignette {
+    position: absolute; inset: 0; z-index: 5; pointer-events: none;
+    background:
+      radial-gradient(ellipse 62% 68% at 50% 50%, transparent 52%, rgba(5, 5, 5, 0.92) 96%),
+      linear-gradient(to right, rgba(5, 5, 5, 0.92), transparent 18%, transparent 82%, rgba(5, 5, 5, 0.92));
+  }
+
+  /* ── captions ── */
+  .caption {
+    position: absolute; z-index: 10;
+    opacity: 0; pointer-events: none;
+    will-change: opacity, transform;
+  }
+  .caption h1 {
+    font-size: clamp(42px, 7vw, 94px);
+    font-weight: 650; letter-spacing: -0.02em; line-height: 1.02;
+  }
+  .caption h2 {
+    font-size: clamp(28px, 4vw, 56px);
+    font-weight: 600; letter-spacing: -0.015em; line-height: 1.06;
+  }
+  .caption p {
+    margin-top: 14px;
+    font-size: clamp(14px, 1.3vw, 19px);
+    color: var(--text-dim); font-weight: 400; letter-spacing: 0.01em;
+    max-width: 34ch;
+  }
+  .caption .gold { color: var(--gold-bright); }
+
+  .cap-center { left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; }
+  .cap-center p { margin-left: auto; margin-right: auto; }
+  .cap-left { left: 7vw; top: 50%; transform: translateY(-50%); }
+  .cap-right { right: 7vw; top: 50%; transform: translateY(-50%); text-align: right; }
+  .cap-right p { margin-left: auto; }
+  .cap-bottom { left: 50%; bottom: 9vh; transform: translateX(-50%); text-align: center; }
+
+  #scroll-cue {
+    position: absolute; bottom: 4.5vh; left: 50%; transform: translateX(-50%);
+    z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 10px;
+    color: var(--text-dim); font-size: 12px; letter-spacing: 0.3em; text-indent: 0.3em;
+    text-transform: uppercase;
+    transition: opacity 0.5s ease;
+  }
+  #scroll-cue::after {
+    content: ""; width: 1px; height: 34px;
+    background: linear-gradient(to bottom, var(--gold), transparent);
+    animation: cue 1.8s ease-in-out infinite;
+  }
+  @keyframes cue {
+    0%, 100% { transform: translateY(0); opacity: 1; }
+    50% { transform: translateY(8px); opacity: 0.4; }
+  }
+
+  /* ── shared CTA ── */
+  .cta {
+    margin-top: 30px; pointer-events: auto;
+    display: inline-block;
+    padding: 14px 38px;
+    border: 1px solid var(--gold);
+    border-radius: 100px;
+    color: var(--gold-bright); text-decoration: none;
+    font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+  .cta:hover { background: var(--gold); color: #050505; }
+
+  /* ═══════ brand page (below the film) ═══════ */
+
+  #brandnav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 80;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 4vw;
+    background: color-mix(in srgb, var(--bg) 80%, transparent);
+    backdrop-filter: blur(14px);
+    opacity: 0; pointer-events: none; transform: translateY(-8px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  #brandnav.on { opacity: 1; pointer-events: auto; transform: none; }
+  #brandnav .mark { letter-spacing: 0.38em; text-indent: 0.38em; font-size: 14px; color: var(--gold-bright); text-transform: uppercase; font-weight: 600; }
+  #brandnav .links { display: flex; gap: 2.4vw; }
+  #brandnav a { color: var(--text-dim); text-decoration: none; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; transition: color 0.25s; }
+  #brandnav a:hover { color: var(--text); }
+  #brandnav .navcta { border: 1px solid var(--gold); border-radius: 100px; padding: 8px 20px; color: var(--gold-bright); }
+  @media (max-width: 760px) { #brandnav .links { display: none; } }
+
+  .bp { position: relative; padding: 13vh 7vw; max-width: 1500px; margin: 0 auto; }
+  .bp .kicker { font-size: 11px; letter-spacing: 0.35em; text-transform: uppercase; color: var(--gold); margin-bottom: 18px; }
+  .bp h2 { font-weight: 650; letter-spacing: -0.03em; line-height: 1.03; font-size: clamp(32px, 4.4vw, 64px); }
+  .bp p.lead { color: var(--text-dim); font-size: clamp(14px, 1.3vw, 18px); line-height: 1.7; max-width: 46ch; }
+  [data-reveal] { opacity: 0; transform: translateY(26px); transition: opacity 0.8s cubic-bezier(.2,.6,.2,1), transform 0.8s cubic-bezier(.2,.6,.2,1); }
+  [data-reveal].in { opacity: 1; transform: none; }
+
+  .bp-split { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 6vw; align-items: center; }
+  .bp-split img { width: 100%; border-radius: 6px;
+    -webkit-mask-image: radial-gradient(ellipse 85% 85% at 50% 50%, black 60%, transparent 100%);
+    mask-image: radial-gradient(ellipse 85% 85% at 50% 50%, black 60%, transparent 100%); }
+  .bp-split.flip > :first-child { order: 2; }
+  @media (max-width: 800px) { .bp-split { grid-template-columns: 1fr; } .bp-split.flip > :first-child { order: 0; } }
+
+  .bp-manifesto { text-align: center; padding: 20vh 7vw 16vh; }
+  .bp-manifesto h2 { font-size: clamp(38px, 6.6vw, 104px); max-width: 17ch; margin: 0 auto; }
+  .bp-manifesto .usp { margin-top: 22px; color: var(--text-dim); font-size: clamp(13px, 1.2vw, 16px); letter-spacing: 0.06em; }
+
+  .bp-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 8vw; text-align: center; }
+  .bp-stats .num { font-weight: 650; letter-spacing: -0.02em; font-size: clamp(36px, 5vw, 72px); color: var(--gold); }
+  .bp-stats .lbl { margin-top: 6px; font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-dim); }
+
+  /* ── flavours / pricing ── */
+  .bp-flavours-head { text-align: center; margin-bottom: 6vh; }
+  .flavour-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 2.2vw;
+  }
+  .flavour-card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
+    border: 1px solid rgba(243,239,230,0.08);
+    border-radius: 14px; padding: 26px 22px 30px;
+    text-align: center; transition: transform 0.35s ease, border-color 0.35s ease;
+  }
+  .flavour-card:hover { transform: translateY(-6px); border-color: rgba(201,163,90,0.4); }
+  .flavour-card img {
+    width: 100%; max-width: 210px; margin: 0 auto 20px; display: block;
+    filter: drop-shadow(0 20px 30px rgba(0,0,0,0.55));
+  }
+  .flavour-card h3 { font-size: 17px; letter-spacing: 0.02em; font-weight: 650; }
+  .flavour-card .tag { margin-top: 6px; font-size: 12px; color: var(--text-dim); letter-spacing: 0.04em; }
+  .flavour-card .price {
+    margin-top: 16px; font-size: 22px; font-weight: 650; color: var(--gold-bright);
+    letter-spacing: 0.01em;
+  }
+  .flavour-card .price span { font-size: 12px; color: var(--text-dim); font-weight: 400; margin-left: 6px; letter-spacing: 0.1em; text-transform: uppercase; }
+  @media (max-width: 900px) { .flavour-grid { grid-template-columns: 1fr 1fr; row-gap: 5vw; } }
+  @media (max-width: 520px) { .flavour-grid { grid-template-columns: 1fr; } }
+
+  .bp-specs table { width: 100%; max-width: 760px; margin: 0 auto; border-collapse: collapse; }
+  .bp-specs td { padding: 16px 8px; border-bottom: 1px solid color-mix(in srgb, var(--text) 10%, transparent); font-size: clamp(13px, 1.2vw, 16px); }
+  .bp-specs td:first-child { color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; font-size: 12px; }
+  .bp-specs td:last-child { text-align: right; }
+
+  .bp-quote { text-align: center; max-width: 36ch; margin: 0 auto; }
+  .bp-quote blockquote { font-size: clamp(22px, 2.8vw, 38px); font-weight: 550; letter-spacing: -0.02em; line-height: 1.28; }
+  .bp-quote cite { display: block; margin-top: 22px; font-style: normal; font-size: 12px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-dim); }
+
+  .bp-promise { display: grid; grid-template-columns: 1fr 1fr; gap: 6vw; align-items: center; }
+  .bp-promise .promise-text { text-align: left; }
+  .bp-promise blockquote { font-size: clamp(24px, 3vw, 42px); font-weight: 550; letter-spacing: -0.02em; line-height: 1.28; }
+  .bp-promise cite { display: block; margin-top: 22px; font-style: normal; font-size: 12px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-dim); }
+  .promise-art {
+    aspect-ratio: 4/5; border-radius: 10px; overflow: hidden;
+    background:
+      radial-gradient(ellipse at 50% 40%, rgba(201,163,90,0.22), transparent 60%),
+      linear-gradient(160deg, #141210, #050505 70%);
+    background-size: cover; background-position: center;
+  }
+  @media (max-width: 800px) { .bp-promise { grid-template-columns: 1fr; } .bp-promise .promise-text { text-align: center; } .promise-art { order: -1; max-width: 420px; margin: 0 auto; } }
+
+  .bp-gallery { display: grid; grid-template-columns: repeat(12, 1fr); gap: 18px; }
+  .bp-gallery img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
+  .bp-gallery .g1 { grid-column: span 7; aspect-ratio: 4/3; }
+  .bp-gallery .g2 { grid-column: span 5; aspect-ratio: 4/5; }
+  .bp-gallery .g3 { grid-column: span 5; aspect-ratio: 1/1; }
+  .bp-gallery .g4 { grid-column: span 7; aspect-ratio: 16/10; }
+  @media (max-width: 800px) { .bp-gallery img { grid-column: span 12 !important; } }
+
+  .bp-ctaband { text-align: center; padding: 18vh 7vw; }
+
+  footer.bp-footer { border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent); padding: 9vh 7vw 5vh; }
+  .bp-footer .cols { display: grid; grid-template-columns: 2fr repeat(3, 1fr); gap: 5vw; max-width: 1500px; margin: 0 auto; }
+  .bp-footer h4 { font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 16px; }
+  .bp-footer a { display: block; color: var(--text-dim); text-decoration: none; font-size: 14px; margin-bottom: 10px; }
+  .bp-footer a:hover { color: var(--text); }
+  .bp-footer .fine { margin-top: 7vh; text-align: center; font-size: 11px; letter-spacing: 0.15em; color: color-mix(in srgb, var(--text) 30%, transparent); text-transform: uppercase; }
+  .bp-footer .credit { margin-top: 10px; text-align: center; font-size: 11px; letter-spacing: 0.1em; color: color-mix(in srgb, var(--gold) 70%, transparent); }
+  @media (max-width: 800px) { .bp-footer .cols { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="mark">Crispé</div>
+  <div class="bar"><i id="loadbar"></i></div>
+  <div class="credit">Designed &amp; developed by Devansh Vishwakarma</div>
+</div>
+
+<div id="track">
+  <div id="stage">
+    <canvas id="film"></canvas>
+    <div id="vignette"></div>
+
+    <div class="caption cap-center" data-in="-0.05" data-hold="0.015" data-out="0.045">
+      <h1>CRISPÉ<span class="gold">.</span></h1>
+      <p>The art of the crunch.</p>
+    </div>
+
+    <div class="caption cap-left" data-in="0.02" data-hold="0.09" data-out="0.15">
+      <h2>From a humble<br><span class="gold">potato.</span></h2>
+      <p>Every crisp begins with one honest ingredient.</p>
+    </div>
+
+    <div class="caption cap-right" data-in="0.185" data-hold="0.25" data-out="0.31">
+      <h2>Carefully<br>sliced.</h2>
+      <p>Paper-thin, precision cut — every single time.</p>
+    </div>
+
+    <div class="caption cap-left" data-in="0.35" data-hold="0.415" data-out="0.47">
+      <h2>Golden<span class="gold">-cooked.</span></h2>
+      <p>Slow-fried to a deep, even, golden crunch.</p>
+    </div>
+
+    <div class="caption cap-right" data-in="0.515" data-hold="0.58" data-out="0.64">
+      <h2>Finished with<br><span class="gold">bold flavour.</span></h2>
+      <p>Four flavours. One obsession — the perfect crunch.</p>
+    </div>
+
+    <div class="caption cap-left" data-in="0.68" data-hold="0.745" data-out="0.80">
+      <h2>The perfect<br><span class="gold">crunch.</span></h2>
+      <p>From the first slice to the final bite.</p>
+    </div>
+
+    <div class="caption cap-bottom" data-in="0.855" data-hold="0.94" data-out="1.08">
+      <h1>CRISPÉ<span class="gold">.</span></h1>
+      <p>Bold flavour. Golden crunch. Crafted with intention.</p>
+      <a class="cta" href="#flavours">Explore flavours</a>
+    </div>
+
+    <div id="scroll-cue">Scroll</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ brand page ═══════════════════════ -->
+
+<nav id="brandnav">
+  <span class="mark">Crispé</span>
+  <div class="links">
+    <a href="#story">Story</a><a href="#craft">Craft</a><a href="#flavours">Flavours</a><a href="#specs">Specs</a>
+  </div>
+  <a class="navcta" href="#flavours">Shop now</a>
+</nav>
+
+<section class="bp bp-manifesto" id="story">
+  <div data-reveal>
+    <p class="kicker">Crispé</p>
+    <h2>The art of the crunch isn't an accident. It's a decision, made one slice at a time.</h2>
+    <p class="usp">Bold flavour. Golden crunch. Crafted with intention.</p>
+  </div>
+</section>
+
+<section class="bp">
+  <div class="bp-split">
+    <div data-reveal>
+      <p class="kicker">Origin</p>
+      <h2>From a humble potato.</h2>
+      <p class="lead">CRISPÉ began with a simple idea — to transform the humble potato into something worth remembering. Carefully sliced, golden-cooked and finished with bold flavours, every crisp is created around one obsession: the perfect crunch.</p>
+      <p class="lead" style="margin-top:16px;">From the first slice to the final bite, CRISPÉ brings together craftsmanship, flavour and a love for beautifully simple things.</p>
+    </div>
+    <img data-reveal src="images/origin-story.webp" alt="A whole potato beside a golden CRISPÉ chip in warm studio light" />
+  </div>
+</section>
+
+<section class="bp" id="craft">
+  <div class="bp-split flip">
+    <div data-reveal>
+      <p class="kicker">Craft — 01</p>
+      <h2>Sliced with precision.</h2>
+      <p class="lead">Every potato is cut to the same paper-thin measure, so each crisp fries evenly and holds the same honest crunch, bag after bag.</p>
+    </div>
+    <img data-reveal src="images/craft-slicing.webp" alt="A knife slicing a potato into paper-thin, uniform rounds" />
+  </div>
+</section>
+
+<section class="bp">
+  <div class="bp-split">
+    <div data-reveal>
+      <p class="kicker">Craft — 02</p>
+      <h2>Golden-cooked, slowly.</h2>
+      <p class="lead">Low and slow in small batches, until every slice turns a deep, even gold — never rushed, never pale.</p>
+    </div>
+    <img data-reveal src="images/craft-frying.webp" alt="Potato slices frying golden in bubbling oil with rising steam" />
+  </div>
+</section>
+
+<section class="bp"><div class="bp-stats">
+  <div data-reveal><div class="num">100%</div><div class="lbl">Real Potato</div></div>
+  <div data-reveal><div class="num">4</div><div class="lbl">Signature Flavours</div></div>
+  <div data-reveal><div class="num">0</div><div class="lbl">Shortcuts Taken</div></div>
+</div></section>
+
+<section class="bp" id="flavours">
+  <div class="bp-flavours-head" data-reveal>
+    <p class="kicker">The Range</p>
+    <h2>Four flavours. One obsession.</h2>
+    <p class="lead" style="margin:14px auto 0;text-align:center;">Bold flavour, golden crunch, crafted with intention — pick your CRISPÉ.</p>
+  </div>
+  <div class="flavour-grid">
+    <div class="flavour-card" data-reveal>
+      <img src="images/card-classic.webp" alt="CRISPÉ Classic — Classic Sea Salt">
+      <h3>CRISPÉ CLASSIC</h3>
+      <div class="tag">Classic Sea Salt</div>
+      <div class="price">₹99 <span>Demo price</span></div>
+    </div>
+    <div class="flavour-card" data-reveal>
+      <img src="images/card-smoky.webp" alt="CRISPÉ Smoke — Smoky BBQ">
+      <h3>CRISPÉ SMOKE</h3>
+      <div class="tag">Smoky BBQ</div>
+      <div class="price">₹99 <span>Demo price</span></div>
+    </div>
+    <div class="flavour-card" data-reveal>
+      <img src="images/card-masala.webp" alt="CRISPÉ Heat — Masala Heat">
+      <h3>CRISPÉ HEAT</h3>
+      <div class="tag">Masala Heat</div>
+      <div class="price">₹99 <span>Demo price</span></div>
+    </div>
+    <div class="flavour-card" data-reveal>
+      <img src="images/card-herb.webp" alt="CRISPÉ Herb — Cream & Herb">
+      <h3>CRISPÉ HERB</h3>
+      <div class="tag">Cream &amp; Herb</div>
+      <div class="price">₹99 <span>Demo price</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="bp bp-specs" id="specs">
+  <div data-reveal>
+    <p class="kicker" style="text-align:center">Specifications</p>
+    <table>
+      <tr><td>Base</td><td>100% real potato</td></tr>
+      <tr><td>Cook style</td><td>Slow-fried, small batch</td></tr>
+      <tr><td>Cut</td><td>Paper-thin, precision sliced</td></tr>
+      <tr><td>Flavours</td><td>Classic Sea Salt · Smoky BBQ · Masala Heat · Cream &amp; Herb</td></tr>
+      <tr><td>Pack price</td><td>₹99 (demo)</td></tr>
+    </table>
+  </div>
+</section>
+
+<section class="bp bp-promise">
+  <div class="promise-text" data-reveal>
+    <p class="kicker">The Crispé Promise</p>
+    <blockquote>"Bold flavour. Golden crunch. Crafted with intention."</blockquote>
+    <cite>Every bag, every batch.</cite>
+  </div>
+  <div class="promise-art" data-reveal style="background-image:url('images/promise.webp')"></div>
+</section>
+
+<section class="bp" id="gallery"><div class="bp-gallery">
+  <img class="g1" data-reveal src="images/card-classic.webp" alt="CRISPÉ Classic Sea Salt" />
+  <img class="g2" data-reveal src="images/card-herb.webp" alt="CRISPÉ Cream & Herb" />
+  <img class="g3" data-reveal src="images/card-masala.webp" alt="CRISPÉ Masala Heat" />
+  <img class="g4" data-reveal src="images/card-smoky.webp" alt="CRISPÉ Smoky BBQ" />
+</div></section>
+
+<section class="bp bp-ctaband" id="reserve">
+  <div data-reveal>
+    <h2>The perfect crunch is one bag away.</h2>
+    <br />
+    <a class="cta" href="#flavours">Shop the range</a>
+  </div>
+</section>
+
+<footer class="bp-footer">
+  <div class="cols">
+    <div>
+      <span style="letter-spacing:0.4em;text-transform:uppercase;color:var(--gold);font-size:13px">Crispé</span>
+      <p class="lead" style="margin-top:14px;font-size:13px">Premium potato chips. The art of the crunch.</p>
+    </div>
+    <div><h4>Product</h4><a href="#story">Story</a><a href="#craft">Craft</a><a href="#flavours">Flavours</a></div>
+    <div><h4>Company</h4><a href="#">About</a><a href="#">Journal</a><a href="#">Stockists</a></div>
+    <div><h4>Support</h4><a href="#">Care</a><a href="#">FAQs</a><a href="#">Contact</a></div>
+  </div>
+  <p class="fine">© 2026 Crispé. A concept brand built with AI-generated imagery &amp; film.</p>
+  <p class="credit">Designed &amp; developed by Devansh Vishwakarma</p>
+</footer>
+
+<script src="main.js"></script>
+<script>
+  // reveal-on-scroll + nav after film
+  const io = new IntersectionObserver(
+    (es) => es.forEach((e) => e.isIntersecting && e.target.classList.add("in")),
+    { threshold: 0.18 }
+  );
+  document.querySelectorAll("[data-reveal]").forEach((el) => io.observe(el));
+  const revealNow = () => document.querySelectorAll("[data-reveal]:not(.in)").forEach((el) => {
+    const r = el.getBoundingClientRect();
+    if (r.top < innerHeight * 0.92 && r.bottom > 0) el.classList.add("in");
+  });
+  addEventListener("scroll", revealNow, { passive: true });
+  revealNow();
+  const nav = document.getElementById("brandnav");
+  const filmEnd = () => (document.getElementById("track")?.offsetHeight ?? innerHeight * 3) - innerHeight;
+  addEventListener("scroll", () => nav.classList.toggle("on", scrollY > filmEnd() * 0.95), { passive: true });
+</script>
+</body>
+</html>
