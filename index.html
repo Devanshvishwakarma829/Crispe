@@ -52,9 +52,16 @@
   }
 
   /* ── scroll stage ── */
-  #track { height: 700vh; position: relative; }
+  /* vh first as a fallback for old browsers, svh (small viewport height)
+     second so supporting browsers use it — svh stays fixed to the smallest
+     possible viewport instead of recalculating every time a mobile
+     browser's address bar shows/hides mid-scroll. That recalculation is
+     what was making the scroll feel like it kept jamming on phones. */
+  #track { height: 700vh; height: 700svh; position: relative; }
   #stage {
-    position: sticky; top: 0; height: 100vh; width: 100%;
+    position: sticky; top: 0;
+    height: 100vh; height: 100svh;
+    width: 100%;
     overflow: hidden;
   }
   #film {

@@ -106,11 +106,31 @@ async function preload() {
 
 /* ── drawing ───────────────────────────────────────────── */
 
-function resize() {
+let lastW = 0, lastH = 0;
+function doResize() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  canvas.width = Math.round(canvas.clientWidth * dpr);
-  canvas.height = Math.round(canvas.clientHeight * dpr);
+  const w = Math.round(canvas.clientWidth * dpr);
+  const h = Math.round(canvas.clientHeight * dpr);
+  if (w === canvas.width && h === canvas.height) return;
+  canvas.width = w;
+  canvas.height = h;
   state.current = -1; // force redraw
+}
+
+// Mobile browsers fire `resize` constantly while scrolling, because the
+// address bar hiding/showing changes window.innerHeight. Reacting to every
+// one of those by reallocating the canvas is what made the scroll feel
+// like it kept jamming/freezing on phones. So: ignore resize events that
+// are just the toolbar collapsing (height-only change, width unchanged,
+// no orientation flip) and debounce the rest to one real resize.
+let resizeTimer = null;
+function resize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  const isToolbarJitter = w === lastW && Math.abs(h - lastH) < Math.max(120, lastH * 0.25);
+  lastW = w; lastH = h;
+  if (isToolbarJitter) return;
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(doResize, 120);
 }
 
 function nearestDecoded(i) {
@@ -205,11 +225,12 @@ function devPlaceholder(msg) {
     ctx.fillText(msg, canvas.width / 2, canvas.height / 2);
   };
   draw();
-  window.addEventListener("resize", () => { resize(); draw(); });
+  window.addEventListener("resize", () => { resize(); setTimeout(draw, 130); });
 }
 
 window.addEventListener("resize", resize);
-resize();
+lastW = window.innerWidth; lastH = window.innerHeight;
+doResize(); // run once immediately on boot, not debounced
 
 loadManifest()
   .then((m) => {
