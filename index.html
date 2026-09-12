@@ -21,6 +21,8 @@
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
+    overscroll-behavior-x: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   /* ── loader ── */
@@ -63,6 +65,7 @@
     height: 100vh; height: 100svh;
     width: 100%;
     overflow: hidden;
+    touch-action: pan-y;
   }
   #film {
     position: absolute; inset: 0; width: 100%; height: 100%;
